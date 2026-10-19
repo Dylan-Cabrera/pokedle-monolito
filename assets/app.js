@@ -48,6 +48,7 @@ const victoryCard = document.getElementById('victoryCard');
 const victoryImg = document.getElementById('victoryImg');
 const victoryName = document.getElementById('victoryName');
 const btnPlayAgain = document.getElementById('btnPlayAgain');
+const victoryNoticeText = document.getElementById('victoryNoticeText');
 
 // Pokédex personal
 const pokedexUserTitle = document.getElementById('pokedexUserTitle');
@@ -223,6 +224,13 @@ async function adivinarPokemon(e) {
     if (estado.usuarioActual) {
       await apiGuardarEnPokedex(estado.usuarioActual.id, secreto.id);
       actualizarContadorPokedex();
+      if (victoryNoticeText) {
+        victoryNoticeText.innerHTML = `¡Este Pokémon se ha registrado en la Pokédex de <strong>${estado.usuarioActual.username}</strong>!`;
+      }
+    } else {
+      if (victoryNoticeText) {
+        victoryNoticeText.innerHTML = `¡Inicia sesión o regístrate para que se guarde en tu <strong>Pokédex personal</strong>!`;
+      }
     }
   }
 }
@@ -419,17 +427,16 @@ async function iniciar() {
     pokemonDatalist.appendChild(opt);
   });
 
-  // Restaurar usuario guardado o dejar como invitado
+  // Restaurar usuario guardado si existe, o dejar sin sesión por defecto
   const guardado = localStorage.getItem('pokedle_user');
   if (guardado) {
     try {
       setUsuario(JSON.parse(guardado));
     } catch {
-      setUsuario({ id: 1, username: 'Entrenador Rojo' });
+      setUsuario(null);
     }
   } else {
-    // Usuario de prueba por defecto
-    setUsuario({ id: 1, username: 'Entrenador Rojo' });
+    setUsuario(null);
   }
 }
 

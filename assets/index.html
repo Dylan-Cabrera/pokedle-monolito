@@ -31,11 +31,11 @@
       
       <!-- Estado de Autenticación del Entrenador -->
       <div class="user-session-bar">
-        <div id="userLoggedInView" class="user-logged-box">
-          <span>👤 Entrenador: <strong id="loggedUsername">Entrenador Rojo</strong></span>
+        <div id="userLoggedInView" class="user-logged-box hidden">
+          <span>👤 Entrenador: <strong id="loggedUsername"></strong></span>
           <button id="btnLogout" class="retro-btn btn-sm btn-muted" title="Cerrar sesión">Salir</button>
         </div>
-        <div id="userLoggedOutView" class="user-logged-box hidden">
+        <div id="userLoggedOutView" class="user-logged-box">
           <button id="btnOpenAuth" class="retro-btn btn-sm btn-primary">🔑 Iniciar Sesión / Registrarse</button>
         </div>
       </div>
@@ -110,7 +110,7 @@
             <img id="victoryImg" src="" alt="Pokémon acertado">
             <div>
               <h2 id="victoryName">Nombre</h2>
-              <p>¡Este Pokémon se ha registrado en tu <strong>Pokédex personal</strong>!</p>
+              <p id="victoryNoticeText">¡Este Pokémon se ha registrado en tu <strong>Pokédex personal</strong>!</p>
             </div>
           </div>
           <button id="btnPlayAgain" class="retro-btn btn-success btn-block">
