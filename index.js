@@ -2,46 +2,17 @@ const express = require('express');
 const path = require('path');
 const { DatabaseSync } = require('node:sqlite');
 
-// ------------------------------------------------------------------------------
-// BASE DE DATOS
-// ------------------------------------------------------------------------------
-const dbPath = path.join(__dirname, process.env.DB_FILE || 'pokedex.db');
-const db = new DatabaseSync(dbPath);
 
-console.log(`[BD] Conectado exitosamente a la base de datos SQLite en: ${dbPath}`);
+// ==============================================================================
+// 1. CONFIGURACIÓN
+// ==============================================================================
+const PORT = process.env.PORT || 3000;
+const DB_PATH = path.join(__dirname, process.env.DB_FILE || 'pokedex.db');
+const POKEAPI_URL = 'https://pokeapi.co/api/v2';
+const TOTAL_POKEMONS = 151; // Primera generación
 
-// Tablas: Solo usuarios y los IDs descubiertos por cada usuario
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT NOT NULL UNIQUE,
-    password TEXT NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
-
-  CREATE TABLE IF NOT EXISTS user_pokedex (
-    user_id INTEGER NOT NULL,
-    pokemon_id INTEGER NOT NULL,
-    discovered_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (user_id, pokemon_id)
-  );
-`);
-
-// Usuario de prueba por defecto
-const countUsers = db.prepare('SELECT COUNT(*) as total FROM users').get();
-if (countUsers.total === 0) {
-  db.prepare('INSERT INTO users (username, password) VALUES (?, ?)').run('Entrenador Rojo', '1234');
-  console.log('[BD] Usuario de prueba creado: "Entrenador Rojo" (clave: 1234)');
-}
-
-console.log("[BD] Tablas 'users' y 'user_pokedex' listas.");
-
-
-// ------------------------------------------------------------------------------
-// DICCIONARIOS Y FUNCIONES AUXILIARES PARA POKEAPI
-// ------------------------------------------------------------------------------
 // Traducciones simples para mostrar en español en el juego
-const traducciones = {
+const TRADUCCIONES = {
   // Tipos
   normal: 'Normal', fire: 'Fuego', water: 'Agua', grass: 'Planta',
   electric: 'Eléctrico', ice: 'Hielo', fighting: 'Lucha', poison: 'Veneno',
@@ -57,8 +28,72 @@ const traducciones = {
   'waters-edge': 'Costa'
 };
 
+
+// ==============================================================================
+// 2. BASE DE DATOS (esquema y consultas)
+// ==============================================================================
+const db = new DatabaseSync(DB_PATH);
+
+// Tablas: solo usuarios y los IDs descubiertos por cada usuario
+const crearTablas = () => {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT NOT NULL UNIQUE,
+      password TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS user_pokedex (
+      user_id INTEGER NOT NULL,
+      pokemon_id INTEGER NOT NULL,
+      discovered_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (user_id, pokemon_id)
+    );
+  `);
+};
+
+// Consultas sobre usuarios
+const buscarUsuario = (username) =>
+  db.prepare('SELECT id, username, password FROM users WHERE username = ?').get(username);
+
+const insertarUsuario = (username, password) =>
+  db.prepare('INSERT INTO users (username, password) VALUES (?, ?)').run(username, password);
+
+const contarUsuarios = () =>
+  db.prepare('SELECT COUNT(*) as total FROM users').get().total;
+
+// Consultas sobre la pokédex de cada usuario (solo IDs)
+const idsDescubiertos = (userId) =>
+  db.prepare('SELECT pokemon_id FROM user_pokedex WHERE user_id = ? ORDER BY pokemon_id ASC')
+    .all(userId)
+    .map(f => f.pokemon_id);
+
+const guardarDescubierto = (userId, pokemonId) =>
+  db.prepare('INSERT OR IGNORE INTO user_pokedex (user_id, pokemon_id) VALUES (?, ?)').run(userId, pokemonId);
+
+const iniciarBaseDeDatos = () => {
+  crearTablas();
+  console.log(`[BD] Conectado exitosamente a la base de datos SQLite en: ${DB_PATH}`);
+
+  // Usuario de prueba por defecto
+  if (contarUsuarios() === 0) {
+    insertarUsuario('Entrenador Rojo', '1234');
+    console.log('[BD] Usuario de prueba creado: "Entrenador Rojo" (clave: 1234)');
+  }
+  console.log("[BD] Tablas 'users' y 'user_pokedex' listas.");
+};
+
+
+// ==============================================================================
+// 3. POKEAPI (consulta y formateo de Pokémon)
+// ==============================================================================
+
 // Cache en memoria para que las consultas a la PokeAPI sean instantáneas
 const cachePokemons = {};
+
+const traducir = (valor) => TRADUCCIONES[valor] || valor;
+const capitalizar = (texto) => texto.charAt(0).toUpperCase() + texto.slice(1);
 
 // Calcula la etapa evolutiva (1, 2 o 3) buscando la especie dentro de su cadena de evolución
 const getEtapaEvolutiva = async (speciesData) => {
@@ -84,184 +119,201 @@ const getEtapaEvolutiva = async (speciesData) => {
   }
 };
 
-// Obtiene los datos de un Pokémon desde la PokeAPI y su especie (para color, etapa evolutiva y hábitat)
+// Datos de especie (color, hábitat y cadena evolutiva); si falla devuelve un objeto vacío
+const getEspecie = async (id) => {
+  try {
+    const res = await fetch(`${POKEAPI_URL}/pokemon-species/${id}`);
+    if (res.ok) return await res.json();
+  } catch (e) {
+    console.log('No se pudo cargar la especie:', e.message);
+  }
+  return {};
+};
+
+// Convierte las respuestas crudas de la API al formato que usa el juego
+const formatearPokemon = (data, especie, etapa) => {
+  const t1 = data.types[0]?.type?.name || 'normal';
+  const t2 = data.types[1]?.type?.name || null;
+  const col = especie.color?.name || 'desconocido';
+  const hab = especie.habitat?.name || 'desconocido';
+
+  return {
+    id: data.id,
+    name: capitalizar(data.name),
+    image: data.sprites?.other?.['official-artwork']?.front_default || data.sprites?.front_default || '',
+    type1: traducir(t1),
+    type2: t2 ? traducir(t2) : 'Ninguno',
+    color: traducir(col),
+    stage: etapa,
+    habitat: traducir(hab)
+  };
+};
+
+// Obtiene un Pokémon por ID o nombre (con cache)
 const getPokemon = async (pokeid) => {
   const clave = String(pokeid).toLowerCase().trim();
   if (cachePokemons[clave]) return cachePokemons[clave];
 
   try {
-    // 1. Datos básicos
-    const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${clave}`);
+    const res = await fetch(`${POKEAPI_URL}/pokemon/${clave}`);
     if (!res.ok) return null;
     const data = await res.json();
 
-    // 2. Datos de especie (color, hábitat y etapa evolutiva)
-    let speciesData = {};
-    try {
-      const resSpecies = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${data.id}`);
-      if (resSpecies.ok) speciesData = await resSpecies.json();
-    } catch (e) {
-      console.log('No se pudo cargar la especie:', e.message);
-    }
-
-    const t1 = data.types[0]?.type?.name || 'normal';
-    const t2 = data.types[1]?.type?.name || null;
-    const col = speciesData.color?.name || 'desconocido';
-    const hab = speciesData.habitat?.name || 'desconocido';
-    const etapa = await getEtapaEvolutiva(speciesData);
-
-    const pokemonFormateado = {
-      id: data.id,
-      name: data.name.charAt(0).toUpperCase() + data.name.slice(1),
-      image: data.sprites?.other?.['official-artwork']?.front_default || data.sprites?.front_default || '',
-      type1: traducciones[t1] || t1,
-      type2: t2 ? (traducciones[t2] || t2) : 'Ninguno',
-      color: traducciones[col] || col,
-      stage: etapa,
-      habitat: traducciones[hab] || hab
-    };
+    const especie = await getEspecie(data.id);
+    const etapa = await getEtapaEvolutiva(especie);
+    const pokemon = formatearPokemon(data, especie, etapa);
 
     // Guardar en cache por ID y por nombre
-    cachePokemons[String(data.id)] = pokemonFormateado;
-    cachePokemons[data.name.toLowerCase()] = pokemonFormateado;
+    cachePokemons[String(data.id)] = pokemon;
+    cachePokemons[data.name.toLowerCase()] = pokemon;
 
-    return pokemonFormateado;
+    return pokemon;
   } catch (error) {
     console.log('Error en la API:', error.message);
     return null;
   }
 };
 
-
-// ------------------------------------------------------------------------------
-// CONFIGURACIÓN DEL SERVIDOR EXPRESS
-// ------------------------------------------------------------------------------
-const PORT = process.env.PORT || 3000;
-const app = express();
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'assets')));
+// Catálogo de nombres para el autocompletado
+const getCatalogo = async () => {
+  const response = await fetch(`${POKEAPI_URL}/pokemon?limit=${TOTAL_POKEMONS}`);
+  const data = await response.json();
+  return data.results.map((p, index) => ({ id: index + 1, name: capitalizar(p.name) }));
+};
 
 
-// ------------------------------------------------------------------------------
-// RUTAS DE LA API (CRUD Y POKÉDLE)
-// ------------------------------------------------------------------------------
+// ==============================================================================
+// 4. LÓGICA DEL JUEGO
+// ==============================================================================
 
-// 1. Iniciar Sesión
-app.post('/api/login', (req, res) => {
-  const { username, password } = req.body;
-  if (!username || !password) {
-    return res.status(400).json({ error: 'Faltan datos' });
-  }
-
-  const query = db.prepare('SELECT id, username, password FROM users WHERE username = ?');
-  const user = query.get(username);
-
-  if (!user || user.password !== password) {
-    return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
-  }
-
-  res.json({ id: user.id, username: user.username });
-});
-
-// 2. Registrar Usuario
-app.post('/api/register', (req, res) => {
-  const { username, password } = req.body;
-  if (!username || !password) {
-    return res.status(400).json({ error: 'Faltan datos' });
-  }
-
-  try {
-    const query = db.prepare('INSERT INTO users (username, password) VALUES (?, ?)');
-    const resultado = query.run(username, password);
-    res.status(201).json({ id: Number(resultado.lastInsertRowid), username });
-  } catch (error) {
-    res.status(400).json({ error: 'El nombre de usuario ya está en uso' });
-  }
-});
-
-// 3. Catálogo de nombres (Primeros 151 Pokémon para el autocompletado)
-app.get('/api/pokemons', async (req, res) => {
-  try {
-    const response = await fetch('https://pokeapi.co/api/v2/pokemon?limit=151');
-    const data = await response.json();
-    const lista = data.results.map((p, index) => ({
-      id: index + 1,
-      name: p.name.charAt(0).toUpperCase() + p.name.slice(1)
-    }));
-    res.json(lista);
-  } catch (e) {
-    res.status(500).json({ error: 'Error al obtener la lista de Pokémon' });
-  }
-});
-
-// 4. Obtener un Pokémon específico (por ID o por nombre) con las 5 categorías
-app.get('/api/pokemon/:id', async (req, res) => {
-  const pokemon = await getPokemon(req.params.id);
-  if (!pokemon) {
-    return res.status(404).json({ error: 'Pokémon no encontrado' });
-  }
-  res.json(pokemon);
-});
-
-// 5. Obtener un Pokémon aleatorio para el juego
-// Considera el switch de excluir capturados si se envía userId
-app.get('/api/random-pokemon', async (req, res) => {
-  const { userId, excludeCaptured } = req.query;
-  const total = 151; // Primera generación
-
-  let excluidos = [];
-  if (excludeCaptured === 'true' && userId) {
-    const capturados = db.prepare('SELECT pokemon_id FROM user_pokedex WHERE user_id = ?').all(userId);
-    excluidos = capturados.map(c => c.pokemon_id);
-  }
-
-  // Filtrar los IDs que no están descubiertos
+// Elige un ID al azar entre los que el usuario aún no descubrió
+const elegirIdRandom = (excluidos = []) => {
   let disponibles = [];
-  for (let i = 1; i <= total; i++) {
+  for (let i = 1; i <= TOTAL_POKEMONS; i++) {
     if (!excluidos.includes(i)) disponibles.push(i);
   }
 
   // Si ya descubrió todos los 151, reiniciar
   if (disponibles.length === 0) {
-    for (let i = 1; i <= total; i++) disponibles.push(i);
+    for (let i = 1; i <= TOTAL_POKEMONS; i++) disponibles.push(i);
   }
 
-  const idRandom = disponibles[Math.floor(Math.random() * disponibles.length)];
-  const pokemon = await getPokemon(idRandom);
+  return disponibles[Math.floor(Math.random() * disponibles.length)];
+};
+
+
+// ==============================================================================
+// 5. CONTROLADORES (uno por endpoint)
+// ==============================================================================
+
+// Iniciar sesión
+const login = (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Faltan datos' });
+  }
+
+  const user = buscarUsuario(username);
+  if (!user || user.password !== password) {
+    return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
+  }
+
+  res.json({ id: user.id, username: user.username });
+};
+
+// Registrar usuario
+const register = (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Faltan datos' });
+  }
+
+  try {
+    const resultado = insertarUsuario(username, password);
+    res.status(201).json({ id: Number(resultado.lastInsertRowid), username });
+  } catch (error) {
+    res.status(400).json({ error: 'El nombre de usuario ya está en uso' });
+  }
+};
+
+// Catálogo de nombres (primeros 151 Pokémon para el autocompletado)
+const listarPokemons = async (req, res) => {
+  try {
+    res.json(await getCatalogo());
+  } catch (e) {
+    res.status(500).json({ error: 'Error al obtener la lista de Pokémon' });
+  }
+};
+
+// Un Pokémon específico (por ID o por nombre) con las 5 categorías
+const obtenerPokemon = async (req, res) => {
+  const pokemon = await getPokemon(req.params.id);
+  if (!pokemon) {
+    return res.status(404).json({ error: 'Pokémon no encontrado' });
+  }
+  res.json(pokemon);
+};
+
+// Pokémon aleatorio para el juego; si se envía userId puede excluir los ya capturados
+const pokemonRandom = async (req, res) => {
+  const { userId, excludeCaptured } = req.query;
+
+  const excluidos = (excludeCaptured === 'true' && userId) ? idsDescubiertos(userId) : [];
+  const pokemon = await getPokemon(elegirIdRandom(excluidos));
+
   console.log(`[TEST] Pokémon secreto elegido: ${pokemon.name} (#${pokemon.id})`);
   res.json(pokemon);
-});
+};
 
-// 6. Obtener los IDs guardados en la Pokédex del usuario
-// Solo devolvemos los IDs; el front hace un fetch por cada ID como pediste
-app.get('/api/user-pokedex/:userId', (req, res) => {
-  const query = db.prepare('SELECT pokemon_id FROM user_pokedex WHERE user_id = ? ORDER BY pokemon_id ASC');
-  const filas = query.all(req.params.userId);
-  const ids = filas.map(f => f.pokemon_id);
-  res.json(ids);
-});
+// IDs guardados en la Pokédex del usuario (el front hace un fetch por cada ID)
+const obtenerPokedexUsuario = (req, res) => {
+  res.json(idsDescubiertos(req.params.userId));
+};
 
-// 7. Guardar el ID de un Pokémon acertado en la Pokédex del usuario
-app.post('/api/user-pokedex', (req, res) => {
+// Guardar el ID de un Pokémon acertado en la Pokédex del usuario
+const guardarEnPokedex = (req, res) => {
   const { userId, pokemonId } = req.body;
   if (!userId || !pokemonId) {
     return res.status(400).json({ error: 'Faltan datos' });
   }
 
   try {
-    db.prepare('INSERT OR IGNORE INTO user_pokedex (user_id, pokemon_id) VALUES (?, ?)').run(userId, pokemonId);
+    guardarDescubierto(userId, pokemonId);
     res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ error: 'Error al registrar en la Pokédex' });
   }
-});
+};
 
 
-// ------------------------------------------------------------------------------
-// INICIO DEL SERVIDOR
-// ------------------------------------------------------------------------------
+// ==============================================================================
+// 6. SERVIDOR EXPRESS (middlewares y rutas)
+// ==============================================================================
+const app = express();
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, 'assets')));
+
+// Usuarios
+app.post('/api/login', login);
+app.post('/api/register', register);
+
+// Pokémon y Pokédle
+app.get('/api/pokemons', listarPokemons);
+app.get('/api/pokemon/:id', obtenerPokemon);
+app.get('/api/random-pokemon', pokemonRandom);
+
+// Pokédex del usuario
+app.get('/api/user-pokedex/:userId', obtenerPokedexUsuario);
+app.post('/api/user-pokedex', guardarEnPokedex);
+
+
+// ==============================================================================
+// 7. INICIO
+// ==============================================================================
+iniciarBaseDeDatos();
+
 app.listen(PORT, () => {
   console.log(`Servidor Pokédle corriendo en http://localhost:${PORT}`);
 });

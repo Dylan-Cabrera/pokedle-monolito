@@ -155,6 +155,63 @@ async function nuevaPartida() {
   }
 }
 
+// Compara el intento con el secreto en las 5 categorías
+function compararConSecreto(intento, secreto) {
+  const tipo1 = intento.type1.toLowerCase() === secreto.type1.toLowerCase();
+  const tipo2 = intento.type2.toLowerCase() === secreto.type2.toLowerCase();
+  const color = intento.color.toLowerCase() === secreto.color.toLowerCase();
+  const etapa = Number(intento.stage) === Number(secreto.stage);
+  const habitat = intento.habitat.toLowerCase() === secreto.habitat.toLowerCase();
+
+  // Pista de etapa evolutiva (flecha arriba/abajo si es menor/mayor)
+  let pistaEtapa = '';
+  if (!etapa) {
+    pistaEtapa = Number(intento.stage) < Number(secreto.stage) ? ' ↑' : ' ↓';
+  }
+
+  return { tipo1, tipo2, color, etapa, habitat, pistaEtapa };
+}
+
+// Agrega la fila del intento al tablero
+function mostrarIntento(intento, aciertos) {
+  const clase = (acierto) => (acierto ? 'match-correct' : 'match-wrong');
+
+  const fila = document.createElement('div');
+  fila.className = 'guess-row';
+  fila.innerHTML = `
+    <div class="guess-cell guess-cell-pokemon">
+      <img src="${intento.image}" alt="${intento.name}">
+      <span>${intento.name}</span>
+    </div>
+    <div class="guess-cell ${clase(aciertos.tipo1)}">${intento.type1}</div>
+    <div class="guess-cell ${clase(aciertos.tipo2)}">${intento.type2}</div>
+    <div class="guess-cell ${clase(aciertos.color)}">${intento.color}</div>
+    <div class="guess-cell ${clase(aciertos.etapa)}">${intento.stage}${aciertos.pistaEtapa}</div>
+    <div class="guess-cell ${clase(aciertos.habitat)}">${intento.habitat}</div>
+  `;
+  guessesList.prepend(fila);
+}
+
+// Cierra la ronda, muestra el cartel y guarda en la Pokédex si hay sesión
+async function ganarPartida(secreto) {
+  estado.juegoTerminado = true;
+  guessInput.disabled = true;
+  document.getElementById('btnSubmitGuess').disabled = true;
+
+  victoryImg.src = secreto.image;
+  victoryName.textContent = secreto.name;
+  victoryCard.classList.remove('hidden');
+  gameStatusText.textContent = `¡Felicitaciones! Adivinaste a ${secreto.name} en ${estado.intentos.length} intento(s).`;
+
+  if (estado.usuarioActual) {
+    await apiGuardarEnPokedex(estado.usuarioActual.id, secreto.id);
+    actualizarContadorPokedex();
+    victoryNoticeText.innerHTML = `¡Este Pokémon se ha registrado en la Pokédex de <strong>${estado.usuarioActual.username}</strong>!`;
+  } else {
+    victoryNoticeText.innerHTML = `¡Inicia sesión o regístrate para que se guarde en tu <strong>Pokédex personal</strong>!`;
+  }
+}
+
 // Procesar el intento del usuario
 async function adivinarPokemon(e) {
   e.preventDefault();
@@ -163,75 +220,25 @@ async function adivinarPokemon(e) {
   const texto = guessInput.value.trim().toLowerCase();
   if (!texto) return;
 
-  const pokemonIngresado = await apiObtenerPokemon(texto);
-  if (!pokemonIngresado) {
+  const intento = await apiObtenerPokemon(texto);
+  if (!intento) {
     alert('Pokémon no encontrado. Verifica el nombre.');
     return;
   }
 
-  // Verificar si ya fue intentado
-  if (estado.intentos.includes(pokemonIngresado.id)) {
+  if (estado.intentos.includes(intento.id)) {
     alert('Ya intentaste con ese Pokémon.');
     return;
   }
 
-  estado.intentos.push(pokemonIngresado.id);
+  estado.intentos.push(intento.id);
   guessInput.value = '';
 
   const secreto = estado.pokemonSecreto;
+  mostrarIntento(intento, compararConSecreto(intento, secreto));
 
-  // Comparar las 5 categorías
-  const cTipo1 = pokemonIngresado.type1.toLowerCase() === secreto.type1.toLowerCase();
-  const cTipo2 = pokemonIngresado.type2.toLowerCase() === secreto.type2.toLowerCase();
-  const cColor = pokemonIngresado.color.toLowerCase() === secreto.color.toLowerCase();
-  const cEtapa = Number(pokemonIngresado.stage) === Number(secreto.stage);
-  const cHab = pokemonIngresado.habitat.toLowerCase() === secreto.habitat.toLowerCase();
-
-  // Pista de etapa evolutiva (flecha arriba/abajo si es menor/mayor)
-  let pistaEtapa = '';
-  if (!cEtapa) {
-    pistaEtapa = Number(pokemonIngresado.stage) < Number(secreto.stage) ? ' ↑' : ' ↓';
-  }
-
-  // Crear fila en la tabla de intentos
-  const fila = document.createElement('div');
-  fila.className = 'guess-row';
-  fila.innerHTML = `
-    <div class="guess-cell guess-cell-pokemon">
-      <img src="${pokemonIngresado.image}" alt="${pokemonIngresado.name}">
-      <span>${pokemonIngresado.name}</span>
-    </div>
-    <div class="guess-cell ${cTipo1 ? 'match-correct' : 'match-wrong'}">${pokemonIngresado.type1}</div>
-    <div class="guess-cell ${cTipo2 ? 'match-correct' : 'match-wrong'}">${pokemonIngresado.type2}</div>
-    <div class="guess-cell ${cColor ? 'match-correct' : 'match-wrong'}">${pokemonIngresado.color}</div>
-    <div class="guess-cell ${cEtapa ? 'match-correct' : 'match-wrong'}">${pokemonIngresado.stage}${pistaEtapa}</div>
-    <div class="guess-cell ${cHab ? 'match-correct' : 'match-wrong'}">${pokemonIngresado.habitat}</div>
-  `;
-  guessesList.prepend(fila);
-
-  // ¿Acertó?
-  if (pokemonIngresado.id === secreto.id) {
-    estado.juegoTerminado = true;
-    guessInput.disabled = true;
-    document.getElementById('btnSubmitGuess').disabled = true;
-
-    victoryImg.src = secreto.image;
-    victoryName.textContent = secreto.name;
-    victoryCard.classList.remove('hidden');
-    gameStatusText.textContent = `¡Felicitaciones! Adivinaste a ${secreto.name} en ${estado.intentos.length} intento(s).`;
-
-    // Si hay usuario activo, guardamos el ID en su Pokédex
-    if (estado.usuarioActual) {
-      await apiGuardarEnPokedex(estado.usuarioActual.id, secreto.id);
-      actualizarContadorPokedex();
-      if (victoryNoticeText) {
-        victoryNoticeText.innerHTML = `¡Este Pokémon se ha registrado en la Pokédex de <strong>${estado.usuarioActual.username}</strong>!`;
-      }
-    } else {
-      if (victoryNoticeText) {
-        victoryNoticeText.innerHTML = `¡Inicia sesión o regístrate para que se guarde en tu <strong>Pokédex personal</strong>!`;
-      }
-    }
+  if (intento.id === secreto.id) {
+    await ganarPartida(secreto);
   }
 }
 
