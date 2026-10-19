@@ -22,7 +22,7 @@
 }
 
 body {
-  background: radial-gradient(circle at 50% 50%, #202428 0%, #111315 100%);
+  background: url('fondo.jpg') center / cover no-repeat fixed;
   min-height: 100vh;
   display: flex;
   justify-content: center;
