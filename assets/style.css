@@ -1,0 +1,746 @@
+/* ==============================================================================
+   ESTILOS VISUALES: POKÉDLE & POKÉDEX (ARQUITECTURA MONOLÍTICA)
+   ============================================================================== */
+
+:root {
+  --poke-red: #dc0a2d;
+  --poke-dark-red: #8b0000;
+  --poke-crimson: #c00d1e;
+  --poke-screen-border: #dedede;
+  --poke-lens-blue: #29b6f6;
+  --poke-correct: #2e7d32;
+  --poke-wrong: #c62828;
+  --poke-cell-bg: #263238;
+  --poke-font-main: 'Rajdhani', sans-serif;
+  --poke-font-pixel: 'Press Start 2P', monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: radial-gradient(circle at 50% 50%, #202428 0%, #111315 100%);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: var(--poke-font-main);
+  padding: 24px 12px;
+  color: #fff;
+}
+
+/* CARCASA DE LA CONSOLA */
+.pokedex-device {
+  width: 100%;
+  max-width: 950px;
+  background-color: var(--poke-red);
+  border: 4px solid #6b0000;
+  border-radius: 24px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6), inset 0 4px 6px rgba(255, 255, 255, 0.3);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ENCABEZADO */
+.pokedex-header {
+  display: flex;
+  align-items: center;
+  padding: 16px 24px;
+  background-color: var(--poke-crimson);
+  border-bottom: 4px solid #750000;
+  gap: 16px;
+}
+
+.lens-big {
+  width: 60px;
+  height: 60px;
+  background: radial-gradient(circle at 35% 35%, #80d8ff, var(--poke-lens-blue), #01579b);
+  border-radius: 50%;
+  border: 5px solid #fff;
+  box-shadow: 0 0 12px rgba(41, 182, 246, 0.8);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.lens-reflection {
+  width: 16px;
+  height: 16px;
+  background: rgba(255, 255, 255, 0.75);
+  border-radius: 50%;
+  position: absolute;
+  top: 8px;
+  left: 10px;
+}
+
+.status-lights {
+  display: flex;
+  gap: 8px;
+}
+
+.light {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #333;
+}
+
+.light-red { background: radial-gradient(circle at 30% 30%, #ff8a80, #d50000); }
+.light-yellow { background: radial-gradient(circle at 30% 30%, #ffff8d, #ffd600); }
+.light-green { background: radial-gradient(circle at 30% 30%, #b9f6ca, #00c853); }
+
+.header-title {
+  margin-left: auto;
+  font-family: var(--poke-font-pixel);
+  font-size: 1.2rem;
+  letter-spacing: 3px;
+  color: #fff;
+  text-shadow: 2px 2px #500;
+}
+
+/* BARRA DE NAVEGACIÓN Y SESIÓN */
+.pokedex-nav {
+  background-color: #8b0000;
+  padding: 10px 24px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 2px solid #5a0000;
+}
+
+.user-session-bar {
+  display: flex;
+  align-items: center;
+}
+
+.user-logged-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.nav-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.tab-btn {
+  font-family: var(--poke-font-pixel);
+  font-size: 0.65rem;
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: 2px solid #222;
+  background-color: #424242;
+  color: #e0e0e0;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #222;
+  transition: all 0.15s ease;
+}
+
+.tab-btn.active {
+  background-color: #ffeb3b;
+  color: #212121;
+  box-shadow: 0 1px 0 #222;
+  transform: translateY(2px);
+}
+
+.badge-count {
+  background-color: #d32f2f;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 0.55rem;
+  margin-left: 4px;
+}
+
+/* CONTENEDOR PRINCIPAL */
+.pokedex-main {
+  padding: 24px;
+  min-height: 480px;
+}
+
+.view-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* BOTÓN DESLIZANTE / SWITCH (EXCLUIR POKÉMON DESCUBIERTOS) */
+.game-controls-bar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  background-color: #a81023;
+  padding: 12px 18px;
+  border-radius: 10px;
+  border: 2px solid #750000;
+}
+
+.switch-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.switch-label {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #fff;
+  user-select: none;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 52px;
+  height: 28px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #424242;
+  border: 2px solid #212121;
+  transition: .3s ease;
+  border-radius: 28px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .3s ease;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+}
+
+input:checked + .slider {
+  background-color: #00c853;
+}
+
+input:checked + .slider:before {
+  transform: translateX(24px);
+}
+
+/* BANNER DE ESTADO */
+.pokedle-status-banner {
+  background-color: #212529;
+  border: 2px solid #37474f;
+  border-radius: 8px;
+  padding: 10px 16px;
+  text-align: center;
+}
+
+.pokedle-status-banner p {
+  font-family: var(--poke-font-pixel);
+  font-size: 0.65rem;
+  color: #80d8ff;
+  line-height: 1.5;
+}
+
+/* FORMULARIO DE ADIVINANZA */
+.guess-form {
+  display: flex;
+  gap: 10px;
+}
+
+.input-wrapper {
+  flex: 1;
+}
+
+.guess-form input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 3px solid #333;
+  font-family: var(--poke-font-main);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #111;
+  outline: none;
+}
+
+.guess-form input:focus {
+  border-color: #ffeb3b;
+}
+
+/* BOTONES RETRO */
+.retro-btn {
+  font-family: var(--poke-font-pixel);
+  font-size: 0.65rem;
+  padding: 12px 18px;
+  border-radius: 6px;
+  border: 2px solid #222;
+  cursor: pointer;
+  box-shadow: 0 4px 0 #222;
+  transition: all 0.1s ease;
+}
+
+.retro-btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #222;
+}
+
+.btn-primary { background-color: #0288d1; color: white; }
+.btn-secondary { background-color: #424242; color: white; }
+.btn-success { background-color: #2e7d32; color: white; }
+.btn-danger { background-color: #c62828; color: white; }
+.btn-muted { background-color: #616161; color: white; }
+.btn-sm { padding: 6px 12px; font-size: 0.6rem; }
+.btn-block { width: 100%; padding: 14px; font-size: 0.75rem; }
+
+/* CARTEL DE VICTORIA */
+.victory-card {
+  background: linear-gradient(135deg, #1b5e20, #2e7d32);
+  border: 4px solid #ffeb3b;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  animation: popIn 0.3s ease;
+}
+
+.victory-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.victory-header h3 {
+  font-family: var(--poke-font-pixel);
+  font-size: 0.9rem;
+  color: #ffeb3b;
+}
+
+.victory-icon {
+  font-size: 1.6rem;
+}
+
+.victory-body {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.victory-body img {
+  width: 90px;
+  height: 90px;
+  object-fit: contain;
+  background-color: rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: 4px;
+}
+
+.victory-body h2 {
+  font-family: var(--poke-font-pixel);
+  font-size: 1.1rem;
+  color: #fff;
+  margin-bottom: 6px;
+}
+
+/* TABLERO DE INTENTOS (5 CATEGORÍAS) */
+.guesses-board {
+  background-color: #1a1a1a;
+  border: 3px solid #333;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.board-header {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1fr 0.8fr 1.2fr;
+  background-color: #2b2b2b;
+  padding: 10px 8px;
+  border-bottom: 2px solid #444;
+  text-align: center;
+}
+
+.col-head {
+  font-family: var(--poke-font-pixel);
+  font-size: 0.6rem;
+  color: #e0e0e0;
+}
+
+.guesses-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  max-height: 380px;
+  overflow-y: auto;
+}
+
+.guess-row {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1fr 0.8fr 1.2fr;
+  gap: 6px;
+  animation: slideDown 0.3s ease;
+}
+
+.guess-cell {
+  background-color: var(--poke-cell-bg);
+  border: 2px solid #37474f;
+  border-radius: 6px;
+  padding: 8px 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fff;
+  min-height: 48px;
+}
+
+.guess-cell-pokemon {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  padding-left: 8px;
+  background-color: #263238;
+}
+
+.guess-cell-pokemon img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.match-correct {
+  background-color: var(--poke-correct) !important;
+  border-color: #4caf50 !important;
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+}
+
+.match-wrong {
+  background-color: var(--poke-wrong) !important;
+  border-color: #e53935 !important;
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+}
+
+/* VISTA 2: POKÉDEX DEL USUARIO */
+.pokedex-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #212529;
+  border: 2px solid #37474f;
+  border-radius: 10px;
+  padding: 16px 20px;
+}
+
+.pokedex-summary h2 {
+  font-family: var(--poke-font-pixel);
+  font-size: 0.85rem;
+  color: #ffeb3b;
+  margin-bottom: 4px;
+}
+
+.pokedex-summary p {
+  font-size: 1rem;
+  color: #e0e0e0;
+}
+
+.user-pokedex-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+  max-height: 480px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.pokedex-card {
+  background: linear-gradient(145deg, #263238, #1e272c);
+  border: 2px solid #455a64;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.pokedex-card:hover {
+  transform: translateY(-3px);
+  border-color: #ffeb3b;
+}
+
+.card-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.card-top img {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.card-title h4 {
+  font-family: var(--poke-font-pixel);
+  font-size: 0.75rem;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.card-attrs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  font-size: 0.8rem;
+  background-color: rgba(0, 0, 0, 0.2);
+  padding: 8px;
+  border-radius: 6px;
+}
+
+.card-attr-item strong {
+  color: #90caf9;
+}
+
+.discovered-date {
+  font-size: 0.7rem;
+  color: #b0bec5;
+  text-align: right;
+  font-style: italic;
+}
+
+.empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px 20px;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+}
+
+.empty-state p {
+  font-size: 1.1rem;
+  color: #ccc;
+  margin-bottom: 12px;
+}
+
+/* MODAL DE LOGIN / REGISTRO */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.75);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  backdrop-filter: blur(3px);
+}
+
+.modal-box {
+  background-color: var(--poke-red);
+  border: 4px solid #6b0000;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 400px;
+  padding: 24px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: popIn 0.25s ease;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  font-family: var(--poke-font-pixel);
+  font-size: 0.85rem;
+  color: #ffeb3b;
+}
+
+.btn-close-modal {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 1.6rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.auth-tabs {
+  display: flex;
+  border-bottom: 2px solid #8b0000;
+  gap: 8px;
+}
+
+.auth-tab-btn {
+  flex: 1;
+  padding: 8px;
+  background: none;
+  border: none;
+  color: #e0e0e0;
+  font-family: var(--poke-font-pixel);
+  font-size: 0.65rem;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+}
+
+.auth-tab-btn.active {
+  color: #ffeb3b;
+  border-bottom: 3px solid #ffeb3b;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.form-group label {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.form-group input {
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 2px solid #5a0000;
+  font-family: var(--poke-font-main);
+  font-size: 1rem;
+  outline: none;
+}
+
+.form-group input:focus {
+  border-color: #ffeb3b;
+}
+
+.auth-error-msg {
+  background-color: #b71c1c;
+  color: white;
+  padding: 8px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* PIE DE PÁGINA */
+.pokedex-footer {
+  padding: 16px 24px;
+  background-color: var(--poke-crimson);
+  border-top: 4px solid #750000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.footer-legend {
+  display: flex;
+  gap: 16px;
+  font-family: var(--poke-font-pixel);
+  font-size: 0.6rem;
+  color: #ffeb3b;
+}
+
+.dpad-cross {
+  position: relative;
+  width: 50px;
+  height: 50px;
+}
+
+.dpad-up, .dpad-down, .dpad-left, .dpad-right, .dpad-middle {
+  position: absolute;
+  background-color: #212121;
+}
+
+.dpad-up { top: 0; left: 17px; width: 16px; height: 17px; border-radius: 3px 3px 0 0; }
+.dpad-down { bottom: 0; left: 17px; width: 16px; height: 17px; border-radius: 0 0 3px 3px; }
+.dpad-left { top: 17px; left: 0; width: 17px; height: 16px; border-radius: 3px 0 0 3px; }
+.dpad-right { top: 17px; right: 0; width: 17px; height: 16px; border-radius: 0 3px 3px 0; }
+.dpad-middle { top: 17px; left: 17px; width: 16px; height: 16px; }
+
+.long-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.pill-btn {
+  width: 40px;
+  height: 10px;
+  background-color: #212121;
+  border-radius: 5px;
+}
+
+/* ANIMACIONES */
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 640px) {
+  .board-header, .guess-row {
+    grid-template-columns: 1fr 0.8fr 0.8fr 0.8fr 0.6fr 0.9fr;
+    font-size: 0.75rem;
+  }
+  .col-head {
+    font-size: 0.5rem;
+  }
+  .guess-cell {
+    font-size: 0.75rem;
+    min-height: 40px;
+  }
+  .header-title {
+    font-size: 0.9rem;
+  }
+  .footer-legend {
+    display: none;
+  }
+}

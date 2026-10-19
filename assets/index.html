@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pokédle Monolítico</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <div class="pokedex-device">
+    
+    <!-- ENCABEZADO DE LA CONSOLA -->
+    <header class="pokedex-header">
+      <div class="lens-big">
+        <div class="lens-reflection"></div>
+      </div>
+      <div class="status-lights">
+        <span class="light light-red"></span>
+        <span class="light light-yellow"></span>
+        <span class="light light-green"></span>
+      </div>
+      <h1 class="header-title">POKÉDLE</h1>
+    </header>
+
+    <!-- BARRA SUPERIOR DE SESIÓN Y PESTAÑAS -->
+    <nav class="pokedex-nav">
+      
+      <!-- Estado de Autenticación del Entrenador -->
+      <div class="user-session-bar">
+        <div id="userLoggedInView" class="user-logged-box">
+          <span>👤 Entrenador: <strong id="loggedUsername">Entrenador Rojo</strong></span>
+          <button id="btnLogout" class="retro-btn btn-sm btn-muted" title="Cerrar sesión">Salir</button>
+        </div>
+        <div id="userLoggedOutView" class="user-logged-box hidden">
+          <button id="btnOpenAuth" class="retro-btn btn-sm btn-primary">🔑 Iniciar Sesión / Registrarse</button>
+        </div>
+      </div>
+
+      <!-- Pestañas de Vista: Pokédle vs Mi Pokédex -->
+      <div class="nav-tabs">
+        <button id="tabPokedle" class="tab-btn active">🎮 Pokédle</button>
+        <button id="tabPokedex" class="tab-btn">
+          📖 Mi Pokédex <span id="pokedexBadge" class="badge-count">0</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="pokedex-main">
+
+      <!-- ===================================================================== -->
+      <!-- VISTA 1: JUEGO POKÉDLE -->
+      <!-- ===================================================================== -->
+      <section id="viewPokedle" class="view-panel">
+        
+        <!-- Barra de Controles del Juego -->
+        <div class="game-controls-bar">
+          
+          <!-- BOTÓN DESLIZANTE / SWITCH PARA EXCLUIR POKÉMON YA DESCUBIERTOS -->
+          <div class="switch-wrapper" title="Si está activo, el Pokémon a adivinar no será uno que ya tengas en tu Pokédex">
+            <label class="switch">
+              <input type="checkbox" id="toggleExcludeCaptured">
+              <span class="slider"></span>
+            </label>
+            <span class="switch-label">Excluir Pokémon de mi Pokédex</span>
+          </div>
+
+          <!-- Botón para seleccionar otro Pokémon aleatorio -->
+          <button id="btnNewRandom" class="retro-btn btn-secondary">
+            🎲 Otro Pokémon Random
+          </button>
+        </div>
+
+        <!-- Mensaje de Estado / Pista del Juego -->
+        <div class="pokedle-status-banner">
+          <p id="gameStatusText">¡Adivina el Pokémon misterioso! Ingresa un nombre para empezar.</p>
+        </div>
+
+        <!-- FORMULARIO DE ADIVINANZA -->
+        <form id="guessForm" class="guess-form">
+          <div class="input-wrapper">
+            <input 
+              type="text" 
+              id="guessInput" 
+              placeholder="Escribe el nombre del Pokémon..." 
+              autocomplete="off" 
+              list="pokemonDatalist"
+              required
+            >
+            <datalist id="pokemonDatalist">
+              <!-- Sugerencias cargadas por JS -->
+            </datalist>
+          </div>
+          <button type="submit" id="btnSubmitGuess" class="retro-btn btn-primary">
+            ¡Adivinar!
+          </button>
+        </form>
+
+        <!-- CARTEL DE VICTORIA -->
+        <div id="victoryCard" class="victory-card hidden">
+          <div class="victory-header">
+            <span class="victory-icon">🎉</span>
+            <h3>¡ACERTASTE EL POKÉMON!</h3>
+          </div>
+          <div class="victory-body">
+            <img id="victoryImg" src="" alt="Pokémon acertado">
+            <div>
+              <h2 id="victoryName">Nombre</h2>
+              <p>¡Este Pokémon se ha registrado en tu <strong>Pokédex personal</strong>!</p>
+            </div>
+          </div>
+          <button id="btnPlayAgain" class="retro-btn btn-success btn-block">
+            🔄 Volver a Jugar (Siguiente Random)
+          </button>
+        </div>
+
+        <!-- TABLERO DE INTENTOS: COMPARACIÓN DE LAS 5 CATEGORÍAS -->
+        <div class="guesses-board">
+          <div class="board-header">
+            <div class="col-head">Pokémon</div>
+            <div class="col-head">Tipo 1</div>
+            <div class="col-head">Tipo 2</div>
+            <div class="col-head">Color</div>
+            <div class="col-head">Gen</div>
+            <div class="col-head">Hábitat</div>
+          </div>
+
+          <div id="guessesList" class="guesses-list">
+            <!-- Filas dinámicas generadas por JS -->
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ===================================================================== -->
+      <!-- VISTA 2: POKÉDEX DEL USUARIO -->
+      <!-- ===================================================================== -->
+      <section id="viewPokedex" class="view-panel hidden">
+        
+        <div class="pokedex-summary">
+          <div>
+            <h2 id="pokedexUserTitle">Pokédex de Entrenador</h2>
+            <p id="pokedexCountText">Descubiertos: 0 Pokémon</p>
+          </div>
+          <button id="btnPokedexBackToGame" class="retro-btn btn-primary">
+            🎮 Ir a Jugar
+          </button>
+        </div>
+
+        <!-- GRILLA DE POKÉMON DESCUBIERTOS -->
+        <div id="userPokedexGrid" class="user-pokedex-grid">
+          <!-- Tarjetas de Pokémon descubiertos generadas por JS -->
+        </div>
+
+      </section>
+
+    </main>
+
+    <!-- PIE DE LA CONSOLA -->
+    <footer class="pokedex-footer">
+      <div class="dpad-cross">
+        <div class="dpad-up"></div>
+        <div class="dpad-down"></div>
+        <div class="dpad-left"></div>
+        <div class="dpad-right"></div>
+      </div>
+      <div class="footer-legend">
+        <span>🟩 Acierto</span>
+        <span>🟥 Distinto</span>
+      </div>
+      <div class="long-buttons">
+        <span class="pill-btn"></span>
+        <span class="pill-btn"></span>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- ======================================================================= -->
+  <!-- MODAL RETRO: LOGIN Y REGISTRO CON CONTRASEÑA -->
+  <!-- ======================================================================= -->
+  <div id="authModal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="authModalTitle">Acceso de Entrenador</h3>
+        <button id="btnCloseAuth" class="btn-close-modal">&times;</button>
+      </div>
+
+      <div class="auth-tabs">
+        <button id="tabAuthLogin" class="auth-tab-btn active">Ingresar</button>
+        <button id="tabAuthRegister" class="auth-tab-btn">Registrarse</button>
+      </div>
+
+      <form id="authForm" class="auth-form">
+        <div class="form-group">
+          <label for="authUsername">Nombre de Entrenador:</label>
+          <input type="text" id="authUsername" placeholder="Ej: AshKetchum" required autocomplete="username">
+        </div>
+
+        <div class="form-group">
+          <label for="authPassword">Contraseña:</label>
+          <input type="password" id="authPassword" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+
+        <div id="authErrorMsg" class="auth-error-msg hidden"></div>
+
+        <button type="submit" id="btnSubmitAuth" class="retro-btn btn-primary btn-block">
+          Entrar
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
