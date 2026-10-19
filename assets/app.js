@@ -184,13 +184,13 @@ async function adivinarPokemon(e) {
   const cTipo1 = pokemonIngresado.type1.toLowerCase() === secreto.type1.toLowerCase();
   const cTipo2 = pokemonIngresado.type2.toLowerCase() === secreto.type2.toLowerCase();
   const cColor = pokemonIngresado.color.toLowerCase() === secreto.color.toLowerCase();
-  const cGen = Number(pokemonIngresado.generation) === Number(secreto.generation);
+  const cEtapa = Number(pokemonIngresado.stage) === Number(secreto.stage);
   const cHab = pokemonIngresado.habitat.toLowerCase() === secreto.habitat.toLowerCase();
 
-  // Pista de generación (flecha arriba/abajo si es menor/mayor)
-  let pistaGen = '';
-  if (!cGen) {
-    pistaGen = Number(pokemonIngresado.generation) < Number(secreto.generation) ? ' ↑' : ' ↓';
+  // Pista de etapa evolutiva (flecha arriba/abajo si es menor/mayor)
+  let pistaEtapa = '';
+  if (!cEtapa) {
+    pistaEtapa = Number(pokemonIngresado.stage) < Number(secreto.stage) ? ' ↑' : ' ↓';
   }
 
   // Crear fila en la tabla de intentos
@@ -204,7 +204,7 @@ async function adivinarPokemon(e) {
     <div class="guess-cell ${cTipo1 ? 'match-correct' : 'match-wrong'}">${pokemonIngresado.type1}</div>
     <div class="guess-cell ${cTipo2 ? 'match-correct' : 'match-wrong'}">${pokemonIngresado.type2}</div>
     <div class="guess-cell ${cColor ? 'match-correct' : 'match-wrong'}">${pokemonIngresado.color}</div>
-    <div class="guess-cell ${cGen ? 'match-correct' : 'match-wrong'}">${pokemonIngresado.generation}${pistaGen}</div>
+    <div class="guess-cell ${cEtapa ? 'match-correct' : 'match-wrong'}">${pokemonIngresado.stage}${pistaEtapa}</div>
     <div class="guess-cell ${cHab ? 'match-correct' : 'match-wrong'}">${pokemonIngresado.habitat}</div>
   `;
   guessesList.prepend(fila);
@@ -305,7 +305,7 @@ async function cargarPokedexVista() {
       </div>
       <div class="card-attrs">
         <div class="card-attr-item"><strong>Color:</strong> ${poke.color}</div>
-        <div class="card-attr-item"><strong>Gen:</strong> ${poke.generation}</div>
+        <div class="card-attr-item"><strong>Etapa:</strong> ${poke.stage}</div>
         <div class="card-attr-item"><strong>Hábitat:</strong> ${poke.habitat}</div>
       </div>
     `;

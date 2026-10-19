@@ -32,19 +32,21 @@
       <!-- Estado de Autenticación del Entrenador -->
       <div class="user-session-bar">
         <div id="userLoggedInView" class="user-logged-box hidden">
-          <span>👤 Entrenador: <strong id="loggedUsername"></strong></span>
+          <span>Entrenador: <strong id="loggedUsername"></strong></span>
           <button id="btnLogout" class="retro-btn btn-sm btn-muted" title="Cerrar sesión">Salir</button>
         </div>
         <div id="userLoggedOutView" class="user-logged-box">
-          <button id="btnOpenAuth" class="retro-btn btn-sm btn-primary">🔑 Iniciar Sesión / Registrarse</button>
+          <button id="btnOpenAuth" class="retro-btn btn-sm btn-primary">Iniciar Sesión / Registrarse</button>
         </div>
       </div>
 
       <!-- Pestañas de Vista: Pokédle vs Mi Pokédex -->
       <div class="nav-tabs">
-        <button id="tabPokedle" class="tab-btn active">🎮 Pokédle</button>
+        <button id="tabPokedle" class="tab-btn active">
+          <img src="pokeball.png" class="btn-sprite" alt="Pokéball"> Pokédle
+        </button>
         <button id="tabPokedex" class="tab-btn">
-          📖 Mi Pokédex <span id="pokedexBadge" class="badge-count">0</span>
+          <img src="pokeball.png" class="btn-sprite" alt="Pokédex"> Mi Pokédex <span id="pokedexBadge" class="badge-count">0</span>
         </button>
       </div>
     </nav>
@@ -71,7 +73,7 @@
 
           <!-- Botón para seleccionar otro Pokémon aleatorio -->
           <button id="btnNewRandom" class="retro-btn btn-secondary">
-            🎲 Otro Pokémon Random
+            Otro Pokémon Random
           </button>
         </div>
 
@@ -103,7 +105,7 @@
         <!-- CARTEL DE VICTORIA -->
         <div id="victoryCard" class="victory-card hidden">
           <div class="victory-header">
-            <span class="victory-icon">🎉</span>
+            <img src="pokeball.png" class="victory-sprite" alt="Pokéball">
             <h3>¡ACERTASTE EL POKÉMON!</h3>
           </div>
           <div class="victory-body">
@@ -114,7 +116,7 @@
             </div>
           </div>
           <button id="btnPlayAgain" class="retro-btn btn-success btn-block">
-            🔄 Volver a Jugar (Siguiente Random)
+            Volver a Jugar (Siguiente Random)
           </button>
         </div>
 
@@ -125,7 +127,7 @@
             <div class="col-head">Tipo 1</div>
             <div class="col-head">Tipo 2</div>
             <div class="col-head">Color</div>
-            <div class="col-head">Gen</div>
+            <div class="col-head">Etapa</div>
             <div class="col-head">Hábitat</div>
           </div>
 
@@ -147,7 +149,7 @@
             <p id="pokedexCountText">Descubiertos: 0 Pokémon</p>
           </div>
           <button id="btnPokedexBackToGame" class="retro-btn btn-primary">
-            🎮 Ir a Jugar
+            <img src="pokeball.png" class="btn-sprite" alt="Pokéball"> Ir a Jugar
           </button>
         </div>
 
@@ -169,8 +171,8 @@
         <div class="dpad-right"></div>
       </div>
       <div class="footer-legend">
-        <span>🟩 Acierto</span>
-        <span>🟥 Distinto</span>
+        <span><span class="legend-dot correct"></span> Acierto</span>
+        <span><span class="legend-dot wrong"></span> Distinto</span>
       </div>
       <div class="long-buttons">
         <span class="pill-btn"></span>

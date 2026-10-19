@@ -142,6 +142,11 @@ body {
   cursor: pointer;
   box-shadow: 0 3px 0 #222;
   transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  line-height: 1;
 }
 
 .tab-btn.active {
@@ -302,7 +307,38 @@ input:checked + .slider:before {
   cursor: pointer;
   box-shadow: 0 4px 0 #222;
   transition: all 0.1s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  line-height: 1;
+  text-align: center;
 }
+
+.btn-sprite {
+  width: 16px;
+  height: 16px;
+  image-rendering: pixelated;
+  flex-shrink: 0;
+}
+
+.victory-sprite {
+  width: 28px;
+  height: 28px;
+  image-rendering: pixelated;
+  flex-shrink: 0;
+}
+
+.legend-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 1px solid #222;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+.legend-dot.correct { background-color: var(--poke-correct); }
+.legend-dot.wrong { background-color: var(--poke-wrong); }
 
 .retro-btn:active {
   transform: translateY(3px);
@@ -679,6 +715,7 @@ input:checked + .slider:before {
 
 .footer-legend {
   display: flex;
+  align-items: center;
   gap: 16px;
   font-family: var(--poke-font-pixel);
   font-size: 0.6rem;

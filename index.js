@@ -57,18 +57,34 @@ const traducciones = {
   'waters-edge': 'Costa'
 };
 
-const mapaGeneraciones = {
-  'generation-i': 1,
-  'generation-ii': 2,
-  'generation-iii': 3,
-  'generation-iv': 4,
-  'generation-v': 5
-};
-
 // Cache en memoria para que las consultas a la PokeAPI sean instantáneas
 const cachePokemons = {};
 
-// Obtiene los datos de un Pokémon desde la PokeAPI y su especie (para color, gen y hábitat)
+// Calcula la etapa evolutiva (1, 2 o 3) buscando la especie dentro de su cadena de evolución
+const getEtapaEvolutiva = async (speciesData) => {
+  try {
+    const urlCadena = speciesData.evolution_chain?.url;
+    if (!urlCadena) return 1;
+    const res = await fetch(urlCadena);
+    if (!res.ok) return 1;
+    const { chain } = await res.json();
+
+    const buscar = (nodo, nivel) => {
+      if (nodo.species.name === speciesData.name) return nivel;
+      for (const siguiente of nodo.evolves_to) {
+        const r = buscar(siguiente, nivel + 1);
+        if (r) return r;
+      }
+      return 0;
+    };
+    return buscar(chain, 1) || 1;
+  } catch (e) {
+    console.log('No se pudo cargar la cadena evolutiva:', e.message);
+    return 1;
+  }
+};
+
+// Obtiene los datos de un Pokémon desde la PokeAPI y su especie (para color, etapa evolutiva y hábitat)
 const getPokemon = async (pokeid) => {
   const clave = String(pokeid).toLowerCase().trim();
   if (cachePokemons[clave]) return cachePokemons[clave];
@@ -79,7 +95,7 @@ const getPokemon = async (pokeid) => {
     if (!res.ok) return null;
     const data = await res.json();
 
-    // 2. Datos de especie (color, hábitat y generación)
+    // 2. Datos de especie (color, hábitat y etapa evolutiva)
     let speciesData = {};
     try {
       const resSpecies = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${data.id}`);
@@ -92,7 +108,7 @@ const getPokemon = async (pokeid) => {
     const t2 = data.types[1]?.type?.name || null;
     const col = speciesData.color?.name || 'desconocido';
     const hab = speciesData.habitat?.name || 'desconocido';
-    const gen = mapaGeneraciones[speciesData.generation?.name] || 1;
+    const etapa = await getEtapaEvolutiva(speciesData);
 
     const pokemonFormateado = {
       id: data.id,
@@ -101,7 +117,7 @@ const getPokemon = async (pokeid) => {
       type1: traducciones[t1] || t1,
       type2: t2 ? (traducciones[t2] || t2) : 'Ninguno',
       color: traducciones[col] || col,
-      generation: gen,
+      stage: etapa,
       habitat: traducciones[hab] || hab
     };
 
